@@ -1,0 +1,3 @@
+flask-app copied from javascript directory
+
+Prototyping with slicing up image into bounding boxes for faces detected, then doing emotion and eye detection on the individual faces

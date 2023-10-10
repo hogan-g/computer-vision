@@ -1,0 +1,9 @@
+body {
+    background-color: white;
+}
+  
+.row:after {
+    content: "";
+    display: table;
+    clear: both;
+}

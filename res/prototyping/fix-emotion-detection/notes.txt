@@ -1,0 +1,1 @@
+This directory is for experimentation and further progress with the emotion detection algorithm, when placed in the flask app it was only ever returning the emotions surpise or fear, none of the other options.

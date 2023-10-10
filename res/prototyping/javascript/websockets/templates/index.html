@@ -1,0 +1,13 @@
+<html>
+	<head></head>
+	<body>
+		<div class="camera">
+            <video id="video">Video stream not available.</video>
+        </div>
+        <canvas id="canvas" style="display:none;"> </canvas>
+        <div class="output">
+            <img id="photo" alt="The screen capture will appear in this box." />
+        </div>  
+        <script src="{{ url_for('static', filename='js/grabimage.js') }}"></script>
+	</body>
+</html>

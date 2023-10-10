@@ -1,0 +1,795 @@
+<%- include('header') -%>
+    <div class="container" id="moduleContainer">
+        <div class="row" style="padding-top: 10%;">
+            <h1 id="title"></h1>
+			<%# Button that changes the top of the page to the Add Lecture form when clicked %>
+			<a class="button button-primary" onclick="swapToForm()">Add new lecture<br></a>
+			<button onclick=removeModule() class="button button-primary" id="removemodule" style="background-color: #C62368; border-color: #C62368;"href="">Delete this module<br></button>
+			<button onclick=showStats() class="button button-primary" id="stats">Show Module Stats</button>
+        </div>
+		<div id="schedule">
+			<%# Displays the lectures for the module %>
+			<h2 style="text-decoration: underline;">Scheduled Lectures</h2>
+			<div class="row" id="module_area">
+				<ul id="mylist" style="columns: 3;"></ul>
+			</div>
+		</div>
+		<div id="statsbox" style="display:none;">
+			<%# Displays the stats for the module, only visible after clicking the Show Stats button %>
+			<h2 style="text-decoration: underline;">Module Overall Statistics</h2>
+			<div class="row">
+				<div class="six columns">
+					<ul>
+						<li id="att_per"></li>
+						<li id="avg_att"></li>
+						<li id="len"></li>
+						<li id="ratio"></li>
+						<li id="max_stu"></li>
+					</ul>
+				</div>
+				<div class="six columns">
+					<h5 style="margin-bottom: 5px;">Most Common Emotions</h5>
+					<ol>
+						<li id="emotion1"></li>
+						<li id="emotion2"></li>
+						<li id="emotion3"></li>
+					</ol>
+				</div>
+			</div>
+			<div class="row" id="module_chart">
+
+			</div>
+		</div>
+		<%# Displays the lecture records for the module %>
+		<h2 style="text-decoration: underline;">Lecture Reports</h2>
+		<div class="row" id="report_area">
+
+		</div>
+    </div>
+
+	<div class="container" id="formContainer" style="display:none;">
+        <div class="row" style="padding-top: 15%;">
+            <h1>Register New Lecture</h1>
+			<a class="button button-primary" onclick="swapToForm()">Show Current Lectures<br></a>
+        </div>
+		<form id="lecture-form">
+			<div class="row">
+				<div class="three columns">
+					<label for="date-input">Date</label>
+					<input type="date" id="date" name="date-input" placeholder="YYYY-MM-DD" required>
+				</div>
+				<div class="six columns">
+					<label for="day-input">Day</label>
+					<input type="text" id="day" name="day-input" placeholder="Monday" required>
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="three columns">
+					<label for="time-input">Time</label>
+					<input type="time" id="time" name="time-input" placeholder="HH:MM:SS" required>
+				</div>
+				<div class="six columns">
+					<label for="attendance-input">Attendance</label>
+					<input type="text" id="attendance" name="attendance-input" placeholder="Attendance Count" required>
+				</div>
+			</div>
+			<button type="submit">Register</button>
+		</form>
+	</div>
+
+	<script>
+	// Uses the code in the URL to get the module ID for future fetch requests
+ 	let myForm = document.getElementById("lecture-form");
+    myForm.addEventListener('submit', formValidator);
+    let params = window.location.search;
+    let urlParams = new URLSearchParams(params);
+    let moduleID = urlParams.get("code");
+    let name = urlParams.get("title");
+    let module_id = "";
+    let req = "http://127.0.0.1:8000/api/module/";
+    fetch(req)
+    .then(response => response.json())
+    .then(data => data.forEach(element => {
+        if (element['code'] == moduleID) {
+            module_id = element['id'];
+        }
+    }));
+
+	// Function for adding a new lecture
+    function formValidator(event){
+        event.preventDefault();
+        let date = document.getElementById("date").value;
+        let day = document.getElementById("day").value;
+        let time = document.getElementById("time").value;
+        let attendance_count = document.getElementById("attendance").value;
+        fetch("http://127.0.0.1:8000/apilecture/", {
+            method: 'POST',
+            headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+			'Authorization': 'Bearer '+localStorage.getItem("access")
+            },
+            body: JSON.stringify({module_id: module_id, date: date, day: day, time: time, attendance_count: attendance_count})
+            })
+            .then(response=>response.json())
+            .then(data=>{
+                window.location.href = "/module?code=" + moduleID + "&title=" + name;
+            });
+	}
+
+	// this functions allows the user to switch between showing the scheduled lectures and the module statistics
+	function showStats(){ 
+		// the two divs we want to swap
+		d1 = document.getElementById("statsbox");
+		d2 = document.getElementById("schedule");
+
+		btn = document.getElementById("stats"); // the button to switch them
+
+		if(d1.style.display == "none"){ 
+			d1.style.display = "block";
+			d2.style.display = "none";
+
+			btn.innerHTML = "Show Module Schedule";
+		}
+		else{
+			d1.style.display = "none";
+			d2.style.display = "block";
+
+			btn.innerHTML = "Show Module Stats";
+		}
+	}
+
+	// Function that makes up the stats using the JSON text in the LectureRecords model
+	// it is mostly unpacking the json and filling html elements with the data
+	function makeStats(obj){
+		// first we parse the JSON
+		data = JSON.parse(obj);
+
+		// then we display the most see emotions
+		if(data['most_emotions'][0] == ""){
+			document.getElementById("emotion1").innerHTML = "No data to show";
+			document.getElementById("emotion1").style.opacity = 0.5;
+		}
+		else{
+			document.getElementById("emotion1").innerHTML = (data['most_emotions'])[0]
+		}
+
+		if(data['most_emotions'][1] == ""){
+			document.getElementById("emotion2").innerHTML = "No data to show";
+			document.getElementById("emotion2").style.opacity = 0.5;
+		}
+		else{
+			document.getElementById("emotion2").innerHTML = (data['most_emotions'])[1]
+		}
+
+		if(data['most_emotions'][2] == ""){
+			document.getElementById("emotion3").innerHTML = "No data to show";
+			document.getElementById("emotion3").style.opacity = 0.5;
+		}
+		else{
+			document.getElementById("emotion3").innerHTML = (data['most_emotions'])[2]
+		}
+
+		// next we calculate the attendance percentage and display it
+
+		let actual = Math.round(data['actual_attended']);
+		let expected = data["total_expected"];
+		let percent = Math.round((actual/expected) * 100);
+
+		document.getElementById("att_per").innerHTML = "Attendance: " + percent + "%" + " - " + actual + "/" + expected;
+		document.getElementById("avg_att").innerHTML = "Average Students Attending: " + Math.round(data['avg_students']);
+
+
+		// next we fill in the average lecture length
+		// the data is given in a number of seconds, we must parse this into hours minutes seconds in a readable format
+		let time = data['avg_length'];
+		hours = Math.floor(time / 3600);
+		time = time - hours * 3600;
+		minutes = Math.floor(time / 60);
+		seconds = Math.round(time - minutes * 60);
+
+		// construct the readable string
+		let time_str = hours + " Hour(s), " + minutes + " Minute(s), " + seconds + " Second(s).";
+		document.getElementById("len").innerHTML = "Average Length: " + time_str;
+
+		document.getElementById("ratio").innerHTML = "Ratio of Front Faces to Side Faces: " + data['faces_to_profiles'].toFixed(2);
+
+		document.getElementById("max_stu").innerHTML = "Most Students Seen: " + data['max_students'];
+
+
+		// next we are defining the chart that will be drawn for attendance overtime
+
+		//setup how long the x-axis is gonna be
+		i = 1;
+		chart_length = [];
+		for(element in data['attendance_overtime']){
+			chart_length.push(i);
+			i += 1;
+		}
+
+		// this is our line on the chart
+		var Attendance = {
+			x: chart_length,
+			y: data['attendance_overtime'],
+			type: 'scatter',
+			name: 'Attendance'
+		};
+
+		var data = [Attendance];
+
+		// the chart settins that plotly uses to change how the chart displays
+		var layout = {
+			title:'Attendance overtime in this Module',
+			xaxis: {
+				title: 'Lectures',
+				linecolor: 'black',
+				linewidth: 2,
+				mirror: true
+			},
+			yaxis: {
+				title: 'Attendance',
+				linecolor: 'black',
+				linewidth: 2,
+				mirror: true,
+				rangemode: 'tozero',
+			},
+			width: 900,
+			height: 400
+		};
+
+		// plot the chart
+		Plotly.newPlot("module_chart", data, layout, {displayModeBar: false});
+	}
+
+	// this function swaps from displaying the current module and showing a form to add a new lecture
+	function swapToForm(){
+        d1 = document.getElementById("formContainer");
+        d2 = document.getElementById("moduleContainer");
+
+        if(d1.style.display == "block"){
+            d1.style.display = "none";
+            d2.style.display = "block";
+        }
+        else{
+            d1.style.display = "block";
+            d2.style.display = "none";
+        }
+    }
+
+	// Function for displaying the lectures for the module on the page in their boxes
+	function displayModule(moduleCode){
+		area = document.getElementById("module_area");
+		let empty = document.createElement("h3");
+		empty.style.fontStyle = "italic";
+		empty.style.opacity = 0.5;
+		empty.innerHTML = "No Lectures to Show...";
+
+		area.appendChild(empty);
+
+		let list1 = document.getElementById("mylist");
+		list1.style.display = "none";
+		let req = "http://127.0.0.1:8000/api/lecture";
+		let index = 0;
+		fetch(req) // make a request to this endpoint
+		.then(response => response.json()) // with our response, get the json data returned
+		.then(data => data.forEach(element => {
+			let lecture_id = element["id"];
+			let tempList = document.createElement("li");
+			tempList.classList.add("box_list");
+			let module_link = element['module_id'];
+			fetch(module_link)
+			.then(response => response.json())
+			.then(data => Object.keys(data).filter(element => data['code'] === moduleCode).forEach(element => {
+				mylist.appendChild(tempList);
+				list1.style.display = "block";
+				empty.style.display = "none";
+			}));
+			let attendance = document.createElement("p");
+			tempList.innerHTML = "Day: " + element['day'] + "<br>" + "Date: " + element['date'] + "<br>" + "Time: " + element['time'] + "<br>" + "Students: " + element['attendance_count'] + "<br>";
+			
+			let flask_button = document.createElement("a");
+			flask_button.style.marginBottom = "0%";
+			flask_button.classList = "button button-primary";
+			flask_button.target = "_blank";
+			flask_button.onclick = function(){
+				window.open("http://127.0.0.1:8000/flask/" + moduleCode + "/" + lecture_id + "/" + element['date'] + "/" + element['time'] + "/" + element['attendance_count'] + "/" + element['day']);
+			}
+			flask_button.innerHTML = "Start Analysis"
+			
+			let remove_button = document.createElement("a");
+			remove_button.style.marginBottom = "0%";
+			remove_button.style.marginLeft = "2%";
+			remove_button.style.backgroundColor = "#C62368";
+			remove_button.style.borderColor = "#C62368";
+			remove_button.classList = "button button-primary";
+			remove_button.target = "_blank";
+			remove_button.innerHTML = "Remove"
+			remove_button.addEventListener('click', function(event) {
+				removeLecture(module_id, element['date'], element['time']);
+			});
+
+			tempList.appendChild(flask_button);
+			tempList.appendChild(remove_button);
+		}))
+	}
+
+	// Function for getting the module code, used for displaying the lecture details and report details
+	function addLink(){
+		let params = window.location.search;
+		let urlParams = new URLSearchParams(params);
+		let moduleCode = urlParams.get("code");
+		let name = urlParams.get("title");
+
+		let moduleTitle = urlParams.get("title");
+		let heading = document.getElementById("title");
+		heading.innerHTML = moduleCode.toUpperCase() + "-" + moduleTitle;
+
+		return moduleCode
+	} 
+
+	// Function for deleting a module
+	function removeModule(){
+		let params = window.location.search;
+		let urlParams = new URLSearchParams(params);
+		let moduleCode = urlParams.get("code");
+		let req = "http://127.0.0.1:8000/api/module/";
+		fetch(req) // make a request to this endpoint
+        .then(response => response.json()) // with our response, get the json data returned
+        .then(data => data.forEach(element => {
+			if(element['code'] === moduleCode) {
+				module_id = element['id']
+				fetch('http://127.0.0.1:8000/apiremove/module/', {
+        			method: 'POST',
+        			headers: {
+            			'Accept': 'application/json',
+            			'Content-Type': 'application/json',
+			            'Authorization': 'Bearer '+localStorage.getItem("access")
+ 			    },
+				body: JSON.stringify({
+					"code": moduleCode // Uses the module code to identify which module to delete
+				})
+				})
+			    window.location.assign("http://localhost:3000/lecturer/")
+			}
+		}))
+	}
+
+	// Function for deleting a lecture
+	function removeLecture(module_id, date, time){
+		let req = "http://127.0.0.1:8000/apiremove/lecture/";
+		fetch(req, {
+        		method: 'POST',
+        		headers: {
+            		'Accept': 'application/json',
+            		'Content-Type': 'application/json',
+			        'Authorization': 'Bearer '+localStorage.getItem("access")
+ 			    },
+				body: JSON.stringify({
+					"module_id": module_id,
+					"date": date,
+					"time": time
+				})
+			})
+			window.location.reload()
+		}
+
+	// Function for displaying the lecture records
+	function displayReports(code){
+		// this dict is used to combine the stats of all reports so we can show the overall module stats
+		let aggregated_stats = {
+			"total_expected" : 0,
+			"actual_attended" : 0,
+			"avg_length" : 0,
+			"avg_students" : 0,
+			"max_students" : 0,
+			"most_emotions" : [],
+			"faces_to_profiles" : 0,
+			"attendance_overtime" : []
+		}
+
+		let total_students = 0;
+		let total_length = 0;
+		let total_percentage = 0;
+		let total_ratio = 0;
+		let emotion_buffer = [];
+
+		// request the lecture records
+		let req = "http://127.0.0.1:8000/api/lecturerecord";
+		let index = 0;
+		fetch(req)
+		.then(response=>response.json())
+		.then(data => data.forEach(element =>
+		{	// for each report take the stats in and parse them, pass it to the constructReport
+			let report_data = JSON.parse(element['report_data']);
+			if(report_data['mcode'] == code){
+				// pass data into the function which actually makes the html
+				constructReport(report_data, index);
+				index += 1;
+
+				// below here is all about recording stats to add to the module overall stats
+				total_students += report_data['average_faces'];
+				aggregated_stats['attendance_overtime'].push(Math.round(report_data['average_faces']));
+				
+				time = report_data['lecture_length'].split(':');
+				total_length += parseInt(time[0]) * 3600; //hours
+				total_length += parseInt(time[1]) * 60;//mins
+				total_length += parseInt(time[2]); //secs
+		
+				aggregated_stats['actual_attended'] += parseFloat(report_data['average_faces']);
+				aggregated_stats['total_expected'] += parseInt(report_data['attendance']);
+
+				total_ratio += report_data['total_faces'] / report_data['total_profiles'];
+
+				emotion_buffer.push(report_data['dominant_emotion']);
+
+				// aggregate results
+				if(report_data['max_faces'] > aggregated_stats['max_students']){
+					aggregated_stats['max_students'] = report_data['max_faces'];
+				}
+			}
+		})).then(data => {
+			// after all reports are made we can finalise data together
+			if(index == 0){
+				area = document.getElementById("report_area");
+				let empty = document.createElement("h3");
+				empty.style.fontStyle = "italic";
+				empty.style.opacity = 0.5;
+				empty.innerHTML = "No Reports to Show...";
+
+				area.appendChild(empty);
+			};
+			aggregated_stats['avg_students'] = total_students/index;
+			aggregated_stats['avg_length'] = total_length/index;
+			aggregated_stats['faces_to_profiles'] = total_ratio/index;
+
+			for(i=0; i<3; i++){
+				emotion = mostFrequentWord(emotion_buffer, emotion_buffer.length);
+				aggregated_stats['most_emotions'].push(emotion);
+
+				emotion_buffer= emotion_buffer.filter(function(x) {
+					return x !== emotion;
+				});
+			}
+		}).then(data => { // after the records have all been generated we can make the module stats, so pass data to makeStats()
+			object = JSON.stringify(aggregated_stats);
+			makeStats(object);
+		})
+	}
+
+	// used to see what emotions are seen most
+	function mostFrequentWord(arr, n){
+		let freq = 0;
+		let res = "";
+		for(let i=0;i<n;i++){
+			let count = 0;
+			for(let j=i+1;j<n;j++){
+				if(JSON.stringify(arr[j]) === JSON.stringify(arr[i])){
+					count++;
+				}
+			}
+			if(count>=freq){
+				res = arr[i];
+				freq = count;
+			}
+		}
+		return res;
+	}	
+
+	// generates the HTML elements to make the Modal the report is shown in 
+	function constructReport(data, index){
+
+		let button_id = "uniqID" + index.toString();
+		let modal_id = "MuniqID" + index.toString();
+		let parent = document.getElementById("report_area"); //where it will be added
+		
+		let box = document.createElement("span"); // the box on the main page where you can open the modal from
+		box.classList = "twelve columns";
+		box.style.margin = "5px";
+		box.style.border = "2px solid black";
+		box.style.padding = "3px";
+
+		let title = document.createElement("h3");
+		title.style.display = "inline";
+		title.innerHTML = "Report: " + data["mcode"].toUpperCase() + " " + data["date"];
+		box.appendChild(title);
+
+		let open_report = document.createElement("button"); // button to open modal
+		open_report.id = button_id;
+		open_report.style.float = "right";
+		open_report.style.margin = "5px";
+		open_report.innerHTML = "Open Report";
+		box.appendChild(open_report);
+		parent.appendChild(box);
+		
+		// MAKING MODAL
+		let modal = document.createElement("div");
+		modal.classList.add("modal");
+		modal.style.overflow = "auto";
+
+		let modal_content = document.createElement("div");
+		modal_content.classList.add("modal-content");
+		modal.appendChild(modal_content);
+
+		let modal_header = document.createElement("div");
+		modal_header.classList.add("modal-header");
+		let close = document.createElement("span")
+		close.classList.add("close");
+		close.innerHTML = "&times;";
+		modal_header.appendChild(close);
+		modal_content.appendChild(modal_header);
+
+		let modal_body = document.createElement("div");
+		modal_body.classList.add("modal-body");
+		modal_body.style.paddingTop = "2%";
+		modal_body.style.paddingBottom = "2%";
+		modal_content.appendChild(modal_body);
+
+		let modal_footer = document.createElement("div");
+		modal_footer.classList.add("modal-footer");
+		modal_content.appendChild(modal_footer);
+
+		// Report Heading
+
+		let heading = document.createElement("h1");
+		heading.innerHTML = "Data Report for " + data["mcode"].toUpperCase() + "   Date: " + data["date"];
+		heading.style.margin = "5px";
+		modal_header.append(heading);
+
+		// Report Body
+
+		let report_body = document.createElement("div");
+		report_body.classList.add("container");
+		
+		let row1 = document.createElement("div");
+		let row2 = document.createElement("div");
+		let row3 = document.createElement("div");
+
+		row1.classList.add("row"); // Row 1 : Box of Stats
+		row1.id = "row1" + modal_id;
+		row2.classList.add("row"); // Row 2 : Data Explanation + Dominant Emoji Image 
+		row2.id = "row2" + modal_id;
+		row3.classList.add("row"); // Row 3 : Graph overtime
+		row3.id = "row3" + modal_id;
+
+		modal_body.appendChild(row1);
+		modal_body.appendChild(row2);
+		modal_body.appendChild(row3);
+
+
+		let day = data['day'];
+		let start_time = data['start_time'];
+		let length = data['lecture_length'];
+		let attendance = data['attendance'];
+		let max_faces = data['max_faces'];
+		let avg_faces = data['average_faces'];
+		let total_faces = data['total_faces'];
+		let profiles = data['total_profiles'];
+		let eyes = data['total_eyes'];
+
+		let emotion = data['dominant_emotion'];
+
+		let eyes_overtime = data['eyes_overtime']
+		let faces_overtime = data['faces_overtime']
+		let profiles_overtime = data['profiles_overtime']
+
+
+		let stats = document.createElement("div");
+		stats.classList.add("u-full-width");
+		stats.style.padding = "1%";
+		stats.style.border = "2px dashed black";
+		let statstitle = document.createElement("h4");
+		statstitle.style.textDecoration = "underline";
+		statstitle.innerHTML = "Lecture Statistics";
+		statstitle.style.display = "block";
+		stats.appendChild(statstitle);
+
+		let StatList = document.createElement("ul");
+		StatList.style.columns = 2;
+
+		dayItem = document.createElement("li");
+		dayItem.innerHTML = "Lecture Day: " + day;
+		timeItem = document.createElement("li");
+		timeItem.innerHTML = "Scheduled Time: " + start_time.substring(0,5);
+		lengthItem = document.createElement("li");
+		lengthItem.innerHTML = "Length of analysis: " + length.split(".")[0];
+		attendanceItem = document.createElement("li");
+		attendanceItem.innerHTML = "Registered Students: " + attendance;
+		maxItem = document.createElement("li");
+		maxItem.innerHTML = "Maximum Faces in one capture: " + max_faces;
+		averageItem = document.createElement("li");
+		averageItem.innerHTML = "Average Faces seen: " + parseFloat(avg_faces).toFixed(2);
+		totalItem = document.createElement("li");
+		totalItem.innerHTML = "Total faces seen throughout lecture: " + total_faces;
+		profileItem = document.createElement("li");
+		profileItem.innerHTML = "Total Profile Faces seen: " + profiles;
+		eyeItem = document.createElement("li");
+		eyeItem.innerHTML = "Total Eyes seen: " + eyes;
+
+		StatList.appendChild(dayItem)
+		StatList.appendChild(timeItem)
+		StatList.appendChild(lengthItem)
+		StatList.appendChild(attendanceItem)
+		StatList.appendChild(maxItem)
+		StatList.appendChild(averageItem)
+		StatList.appendChild(totalItem)
+		StatList.appendChild(profileItem)
+		StatList.appendChild(eyeItem)
+
+		stats.appendChild(StatList);
+		row1.appendChild(stats);
+
+		// middle row
+
+		row2.style.marginTop = "3%";
+		row2.style.marginBottom = "3%";
+		row2.style.display = "flex";
+
+		let emoji = document.createElement("div");
+		emoji.style.border = "2px dashed black";
+		emoji.style.padding = "1%";
+		emoji.classList = "six columns";
+		
+		let data_info = document.createElement("div");
+		data_info.style.border = "2px dashed black";
+		data_info.style.padding = "2%";
+		data_info.classList = "six columns";
+
+		row2.appendChild(data_info);
+
+		let info = document.createElement("ul");
+		info.style.marginBottom = "0%";
+		let p1 = document.createElement("li");
+		p1.innerHTML = "Above you can see the raw statistics extracted from your lecture";
+		let p2 = document.createElement("li");
+		p2.innerHTML = "The faces seen will not be 100% accurate to student numbers, due to unseen faces or duplicate detections";
+		let p3 = document.createElement("li");
+		p3.innerHTML = "An image to analyse is captured every one second whilst analysis is ongoing";
+		let p4 = document.createElement("li");
+		p4.innerHTML = "Shown Below is a graph which shows the number of faces, profiles (side-faces) and eyes seen over time";
+
+		info.append(p1,p2,p3,p4);
+		data_info.append(info);
+
+		row2.appendChild(emoji);
+
+		let canvas = document.createElement("img");
+		canvas.style.width = "150px";
+		canvas.style.margin = "2%";
+		canvas.style.float = "left";
+
+		let emotionTitle = document.createElement("h4");
+		emotionTitle.style.marginBottom = "5px";
+		let desc = document.createElement("p");
+		desc.innerHTML = "The dominant emotion is the most frequently recognised emotion from faces captured during analysis. <br>This emotion detection is not 100% accurate and you may interpret the results and patterns in whatever way you feel is right.";
+		
+		emoji.appendChild(emotionTitle);
+		emoji.appendChild(canvas);
+		emoji.appendChild(desc);
+
+		// angry, disgust, fear, happy, sad, surprise, neutral
+		// change displayed emoji based on emotion
+		if(emotion == "angry"){
+			canvas.src = "/imgs/angry_emoji.png";
+			emotion_found = "Angry";
+		}
+		else if(emotion == "disgust"){
+			canvas.src = "/imgs/disgust_emoji.png"
+			emotion_found = "Disgust";
+		}
+		else if(emotion == "fear"){
+			canvas.src = "/imgs/fear_emoji.png"
+			emotion_found = "Fear";	
+		}
+		else if(emotion == "happy"){
+			canvas.src = "/imgs/happy_emoji.png"
+			emotion_found = "Happy";
+		}
+		else if(emotion == "sad"){
+			canvas.src = "/imgs/sad_emoji.png"
+			emotion_found = "Sad";
+		}
+		else if(emotion == "surprise"){
+			canvas.src = "/imgs/surprise_emoji.png"
+			emotion_found = "Surprise";
+		}
+		else if(emotion == "neutral"){
+			canvas.src = "/imgs/neutral_emoji.png"
+			emotion_found = "Neutral";
+		}
+
+		emotionTitle.innerHTML = "Dominant Emotion = " + emotion_found;
+
+
+		// generating chart which will display in each Modal
+
+		// chart
+		i = 1;
+		chart_length = [];
+		for(element in faces_overtime){
+			chart_length.push(i);
+			i += 1;
+		}
+
+		// this chart has 3 lines on it
+		var Faces = {
+			x: chart_length,
+			y: faces_overtime,
+			type: 'scatter',
+			name: 'Faces Seen'
+		};
+
+		var Profiles = {
+			x: chart_length,
+			y: profiles_overtime,
+			type: 'scatter',
+			name: 'Profiles Seen'
+		};
+
+		var Eyes ={
+			x: chart_length,
+			y: eyes_overtime,
+			type: 'scatter',
+			name: 'Eyes Seen'
+		}
+
+		var data = [Faces, Profiles, Eyes];
+
+		// overal layout choices for the chart, used by plotly
+		var layout = {
+			title:'Data Points throughout Lecture',
+			xaxis: {
+				title: 'Capture Number',
+				linecolor: 'black',
+				linewidth: 2,
+				mirror: true
+			},
+			yaxis: {
+				title: 'Number Seen',
+				linecolor: 'black',
+				linewidth: 2,
+				mirror: true
+			},
+			width: 900,
+			height: 400
+		};
+
+		row3.style.border = "2px dashed black";
+		row3.style.placeItems = "center";
+
+		// Report Footer
+
+		disclaimer = document.createElement("p");
+		disclaimer.style.fontStyle = "italic";
+		disclaimer.innerHTML = "This system is still being developed, the data reported here is meant to be a tool to guide and help you, do not take it as fact."
+
+		modal_footer.append(disclaimer);
+
+		// Button Setup
+		parent.appendChild(modal);
+		open_report.onclick = function() {
+			modal.style.display = "block";
+		}
+		close.onclick = function() {
+			modal.style.display = "none";
+		}
+		window.onclick = function(event) {
+			if (event.target == modal) {
+				modal.style.display = "none";
+			}
+		}
+
+		// plot the chart
+		Plotly.newPlot("row3" + modal_id, data, layout, {displayModeBar: false});
+	}
+
+	window.onload = function(){
+        isLoggedIn(); // when the page loads call isLoggedIn
+		code = addLink();
+        displayModule(code);
+		displayReports(code);
+    }
+    </script>
+  </body>
+</html>
+<%- include('footer') -%>

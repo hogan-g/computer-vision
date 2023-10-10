@@ -1,0 +1,49 @@
+<html>
+	<head></head>
+	<body>
+        <div class="row">
+            <div class="column">
+                <div class="camera" style="float: left;">
+                    <video id="video">Video stream not available.</video>
+                    <br>
+                    <button id="camera-button">Take photo</button>
+                    <button id="start-repeating">Start Capture</button>
+                    <button id="stop-repeating">Stop Capture</button>
+                </div>
+                <div style="float: right;">
+                    <h2>Total Data Points</h2>
+                    <ul>
+                        <li id="captures">Total Num of Captures Taken: 0</li>
+                        <li id="total-faces">Total Num of Faces Detected: 0</li>
+                        <li id="total-profiles">Total Num of Profiles Detected: 0</li>
+                        <li id="total-eyes">Total Num of Eyes Detected: 0</li>
+                        <li id="average-faces">Average Num of Faces: 0</li>
+                    </ul>
+
+                    <h2>Detected</h2>
+                    <ul>
+                        <li id="curr_faces">Faces: </li>
+                        <li id="curr_profiles">Side Faces: </li>
+                        <li id="curr_eyes">Eyes: </li>
+                    </ul>
+                </div>
+                <canvas id="canvas" style="display:none;"> </canvas>
+                <div class="output">
+                    <img id="photo" alt="The screen capture will appear in this box." />
+                </div>  
+            </div>
+            <div class="column" style="width: 40%; margin-left: 10%;">
+                <div id="side-column"></div>
+                
+                <h3> Emotions Detected</h3>
+                <ul id="list"></ul>
+
+                <div id="chart_div"></div>
+            </div>
+        </div>
+		
+        <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+	</body>
+</html>

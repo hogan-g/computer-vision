@@ -1,0 +1,41 @@
+<html>
+	<head></head>
+	<body>
+        <div class="container" style="padding-top: 5%;">
+            <button onclick="shutdown()" class="button-primary">Save & Exit</button>
+            <button id="camera-button">Take Test Photo</button>
+            <button id="start-repeating" style="color:green;">Start Auto-Capture</button>
+            <button id="stop-repeating" style="color:red;">Pause Auto-Capture</button>
+            <div class="row">
+                <div class="four columns">
+                    <h4 style="color:red; text-decoration: line-through; margin-bottom: 0%;" id="capture-status">Capturing Now</h4>
+                    <h2 style="text-decoration: underline;">Instructions</h2>
+                    <ol>
+                        <li> Position Camera to face Class</li>
+                        <li> Take a test photo if necessary</li>
+                        <li> Start Auto-Capture when ready</li>
+                        <li> You can pause the analysis using the pause button</li>
+                        <li> As the captures are taken, a small preview will display beside the preview frame</li>
+                        <li> Stop Capture and Save & Exit when done, a data report will be generated for you.</li>
+                    </ol>
+                </div>
+                <div class="six columns">
+                    <div class="camera">
+                        <video id="video" style="float:left;">Video stream not available.</video>
+                    </div>
+                    <canvas id="canvas" style="display:none;"> </canvas>
+                </div>
+                <div class="two columns" style="margin-left: 0%;">
+                    <img id="photo" style="width:100%;"/>
+                </div>
+            </div>
+        </div>
+		
+        <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/normalize.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/skeleton.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+
+	</body>
+</html>

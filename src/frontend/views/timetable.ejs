@@ -1,0 +1,168 @@
+<%- include('header') -%>
+<div class="container" style="padding-top: 80px;">
+    <div class="row" class="center">
+        <div class="three columns">&nbsp;</div>
+        <div class="six columns">
+            <div>
+                <h3 style="text-decoration: underline; text-decoration-color: #C62368;">Monday</h3>
+                <ul id="Monday_list"></ul>
+            </div>
+            <div>
+                <h3 style="text-decoration: underline; text-decoration-color: #00B7FF;">Tuesday</h3>
+                <ul id="Tuesday_list"></ul>
+            </div>
+            <div>
+                <h3 style="text-decoration: underline; text-decoration-color: #C62368;">Wednesday</h3>
+                <ul id="Wednesday_list"></ul>
+            </div>
+            <div>
+                <h3 style="text-decoration: underline; text-decoration-color: #00B7FF;">Thursday</h3>
+                <ul id="Thursday_list"></ul>
+            </div>
+            <div>
+                <h3 style="text-decoration: underline; text-decoration-color: #C62368;">Friday</h3>
+                <ul id="Friday_list"></ul>
+            </ul>
+        </div>
+        <div class="three columns">&nbsp;</div>
+    </div>
+</div>
+<script>
+    /* Function that gathers all the modules, filters them by username, 
+    and then gets all the lectures, before turning them into a dictionary so they can be sorted in the next function */
+    function gatherLectures(){	
+		let list1 = document.getElementById("mylist");
+        let lectures = [];
+		let req = "http://127.0.0.1:8000/api/module/";
+		fetch(req) // make a request to this endpoint
+        .then(response => response.json()) // with our response, get the json data returned
+        .then(data => data.forEach(element => {
+            let module_info = element
+            let lecturer = element['lecturer'];
+            let module_code = element['code'];
+            let module_name = element["name"];
+            let id = element['id'];
+            fetch(lecturer)
+            .then(response => response.json())
+            .then(data => Object.keys(data).forEach(element => {
+                if (element == 'username') {
+                    let username = localStorage.getItem("username");
+                    if (data[element] === username) {
+                        fetch("http://127.0.0.1:8000/api/lecture/")
+                        .then(response => response.json())
+                        .then(data => data.forEach(element => {
+                            module_id = element['module_id'].slice(33).slice(0, -1);
+                            if (module_id == id) {
+                                let lecture_dictionary = {
+                                    "module_code": module_code,
+                                    "module_name": module_name,
+                                    "id": element['id'],
+                                    "date": element['date'],
+                                    "day": element['day'],
+                                    "time": element['time'],
+                                    "attendance": element['attendance_count']
+                                }
+                                lectures.push(lecture_dictionary);
+                                sortLectures(lectures);
+                            }
+                        }));
+                    };
+                };
+            }));
+        }));
+	}
+
+    // Function that sorts the lectures into their different days, and then into chronological order
+    function sortLectures(lectures){
+        document.getElementById("Monday_list").innerHTML = "<h5 id='Mon_empty' style='opacity:0.5;'>No Lectures Scheduled...</h5>";
+        document.getElementById("Tuesday_list").innerHTML = "<h5 id='Tue_empty' style='opacity:0.5;'>No Lectures Scheduled...</h5>";
+        document.getElementById("Wednesday_list").innerHTML = "<h5 id='Wed_empty' style='opacity:0.5;'>No Lectures Scheduled...</h5>";
+        document.getElementById("Thursday_list").innerHTML = "<h5 id='Thu_empty' style='opacity:0.5;'>No Lectures Scheduled...</h5>";
+        document.getElementById("Friday_list").innerHTML = "<h5 id='Fri_empty' style='opacity:0.5;'>No Lectures Scheduled...</h5>";
+        lecture_list = [];
+        // Sorts all the lectures based on their time
+        lectures.sort(function(a, b) {
+            return a.time.localeCompare(b.time);
+        });
+        for (i = 0; i < lectures.length; i++) {
+            let lecture = document.createElement("li");
+            lecture.classList.add("box_list");
+            lecture.setAttribute("id", lectures[i]['module_name'] + lectures[i]['time'] + lectures[i]['day']);
+            // Makes sure the lecture hasn't been added already in the loop
+            var lecture_check = document.getElementById(lectures[i]['module_name'] + lectures[i]['time'] + lectures[i]['day'])
+            lecture.innerText = lectures[i]['module_code'].toUpperCase() + " - " + lectures[i]['module_name'];
+            
+            // If the lecture hasn't been added yet, gets added to whichever day it matches
+            if (!lecture_check) {
+                if (lectures[i]['day'] == 'Monday') {
+                    let lecture_list = document.getElementById("Monday_list");
+                    lecture_list.appendChild(lecture);
+                    
+                    lecture.style.backgroundColor = "rgba(198, 35, 104, 0.4)";
+                    document.getElementById("Mon_empty").style.display = "none";
+                }
+                else if (lectures[i]['day'] == 'Tuesday') {
+                    let lecture_list = document.getElementById("Tuesday_list");
+                    lecture_list.appendChild(lecture);
+
+                    lecture.style.backgroundColor = "rgba(0, 183, 255, 0.4)";
+                    document.getElementById("Tue_empty").style.display = "none";
+                }
+                else if (lectures[i]['day'] == 'Wednesday') {
+                    let lecture_list = document.getElementById("Wednesday_list");
+                    lecture_list.appendChild(lecture);
+
+                    lecture.style.backgroundColor = "rgba(198, 35, 104, 0.4)";
+                    document.getElementById("Wed_empty").style.display = "none";
+                }
+                else if (lectures[i]['day'] == 'Thursday') {
+                    let lecture_list = document.getElementById("Thursday_list");
+                    lecture_list.appendChild(lecture);
+
+                    lecture.style.backgroundColor = "rgba(0, 183, 255, 0.4)";
+                    document.getElementById("Thu_empty").style.display = "none";
+                } 
+                else if (lectures[i]['day'] == 'Friday') {
+                    let lecture_list = document.getElementById("Friday_list");
+                    lecture_list.appendChild(lecture);
+
+                    lecture.style.backgroundColor = "rgba(198, 35, 104, 0.4)";
+                    document.getElementById("Fri_empty").style.display = "none";
+                }
+                let time = document.createElement("p");
+                time.innerText = "Time: " + lectures[i]['time'];
+                lecture.appendChild(time);
+
+                // Adds a button for starting flask analysis to each lecture
+                let flask_button = document.createElement("a");
+			    flask_button.style.marginBottom = "0%";
+			    flask_button.classList = "button";
+			    flask_button.target = "_blank";
+                flask_button.style.borderColor = "black";
+                flask_link = "http://127.0.0.1:8000/flask/" + lectures[i]['module_code'] + "/" + lectures[i]['id'] + "/" + lectures[i]['date'] + "/" + lectures[i]['time'] + "/" + lectures[i]['attendance'] + "/" + lectures[i]['day'];
+			    flask_button.onclick = function(){
+				    window.open(flask_link);
+			    }
+			    flask_button.innerHTML = "Start Analysis"
+                lecture.appendChild(flask_button);
+                lecture.style.display = "block";
+
+                // Adds a link to the relevant module for each lecture
+                let link = document.createElement("a");
+                link.innerHTML = "VIEW " + lectures[i]['module_code'];
+                link.classList = "button";
+                link.style.borderColor = "black";
+                link.style.marginLeft = "2%";
+                let productStr = "/module?code=" + lectures[i]['module_code'] + "&title=" + lectures[i]['module_name'];
+                link.href = productStr;
+                lecture.appendChild(link);
+            }
+        }
+    }
+
+    window.onload = function(){
+        isLoggedIn(); // when the page loads call isLoggedIn
+        lectures = gatherLectures();
+    }
+</script>
+<%- include('footer') -%>

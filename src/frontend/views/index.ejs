@@ -1,0 +1,211 @@
+<%- include('header') -%>
+    <div class="container">
+        <div class="row">
+            <div class="one-half column" style="margin-top: 20%">
+                <h1><strong><%= title %></strong></h1>
+                <h4 id="welcome">Welcome! Register or Login below</h4>
+                <a class="button button-primary" id="logged-in-module" href="/lecturer/">View your Modules<br></a>
+                <a class="button button-primary" onclick="SwapDivsWithClick('desc', 'register', 'login')" id="register_link">Register<br></a>
+                <a class="button button-primary" href="/timetable" id="timetable_link" style="display: none;">Timetable<br></a>
+                <a class="button button-primary" onclick="SwapDivsWithClick('desc', 'login', 'register')" id="auth-link">Login<br></a>
+            </div>
+            <div id="desc" class="one-half column" style="display:block; margin-top: 20%; border-left: 3px dotted; padding-left: 3%;">
+                <h5>Description</h5>
+                <p>Class Vision is a prototype system aimed at helping lecturers better understand how well students are <b>engaging</b> in their lectures. This system uses <b>cutting-edge</b> computer vision technology to analyse a video stream of a lecture, it records <b> key data points </b> and returns them back to the lecturer. This systems generates <b>data reports</b> to help lecturers improve.</p>
+            </div>
+            <div id="login" class="one-half column" style="display:none; margin-top: 20%; border-left: 3px dotted; padding-left: 3%;">
+                <form id="login-form">
+                    <div class="row">
+                        <div class="six columns">
+                            <label for="username-input">Username</label>
+                            <input class="u-full-width" type="text" name="username-input" id="username_login" placeholder="Your Username" required>
+                        </div>
+                        <div class="six columns">
+                            <label for="password-input">Password</label>
+                            <input class="u-full-width" type="password" name="password-input" id="password_login" placeholder="Your Password" required>
+                        </div>
+                    </div>  
+                    <button class="button-primary" type="submit">Login</button>
+                    <div class="row">
+                        <div class="twelve columns" style="background-color: #E55451; padding: 2%; border: 3px solid red; display: none;" id="error-section-log">
+                        
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div id="register" class="one-half column" style="display:none; margin-top: 20%; border-left: 3px dotted; padding-left: 3%;">
+                <form id="register-form">
+                    <div class="row">
+                        <div class="six columns">
+                            <label for="username-input">Username</label>
+                            <input class="u-full-width" type="text" id="username_register" name="username-input" placeholder="Your Username" required>
+                        </div>
+                        <div class="six columns">
+                            <label for="email-input">Email</label>
+                            <input class="u-full-width" type="email" id="email_register" name="email-input" placeholder="Your Email" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="six columns">
+                            <label for="password-input">Password</label>
+                            <input class="u-full-width" type="password" id="password_register" name="password-input" placeholder="Your Password" required>
+                        </div>
+                    </div>
+                    <button class="button-primary" type="submit">Register</button>  
+                    <div class="row">
+                        <div class="twelve columns" style="background-color: #E55451; padding: 2%; border: 3px solid red; display: none;" id="error-section-reg">
+                        
+                        </div>
+                    </div>
+                </form>
+            </div>
+    </div>
+    <script>
+        function changePage()
+        {        
+            if(window.userLoggedIn)
+            {
+                let loginLink = document.getElementById("auth-link");
+                loginLink.innerHTML = "Logout";
+                loginLink.href = "/";
+                loginLink.onclick = ()=>{ 
+                    localStorage.removeItem("access");
+                    localStorage.removeItem("refresh");
+                    localStorage.removeItem("username");
+                    window.userLoggedIn = false;
+                }
+                document.getElementById("register").style.display = "none";
+                document.getElementById("logged-in-module").classList.remove("disabled");
+                
+                let username = localStorage.getItem("username");
+                document.getElementById("welcome").innerHTML = "Welcome " + username;
+                
+                document.getElementById("register_link").style.display = "none";
+                document.getElementById("timetable_link").style.display = "inline-block";
+            }
+            else
+            {
+                document.getElementById("logged-in-module").classList.add("disabled");
+                document.getElementById("register_link").style.display = "inline-block";
+                document.getElementById("timetable_link").style.display = "none";
+            }
+        }
+
+        // div1 = desc, div2 = one we want to display, div3 is the other one
+        function SwapDivsWithClick(div1,div2,div3)
+        {
+            d1 = document.getElementById(div1);
+            d2 = document.getElementById(div2);
+            d3 = document.getElementById(div3);
+
+            if(d2.style.display == "block"){ 
+                // if the block we want is already there, we toggle it off
+                d2.style.display = "none";
+                d1.style.display = "block";
+            }
+            else if(d1.style.display == "none"){ 
+                // if the base desc if not there, we know div3 is displayed
+                d3.style.display = "none";
+                d2.style.display = "block";
+            }
+            else{ // if base description is there
+                d1.style.display = "none";
+                d2.style.display = "block";
+            }
+        }
+
+        function loginformValidator(event){
+            event.preventDefault();
+            let username = document.getElementById("username_login").value;
+            localStorage.setItem("username", username);
+            let password = document.getElementById("password_login").value;
+            fetch("http://127.0.0.1:8000/api/token/", {
+                method: 'POST',
+                headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({username: username, password: password})
+                })
+                .then(response=>response.json())
+                .then(data=>{
+                    console.log(data); // still log it so we can debug
+                    if('access' in data){
+                        let accessToken = data['access'];
+                        let refreshToken = data['refresh'];
+                        localStorage.setItem("access", accessToken);
+                        localStorage.setItem("refresh", refreshToken);
+                        window.location.href = "/";
+                    }
+                    else{
+                        let alertArea = document.getElementById("error-section-log");
+                        alertArea.style.display = "block";
+                        alertArea.innerHTML = "Username or Password entered incorrectly, please try again."
+                    }
+                });
+            }
+        let myLoginForm = document.getElementById("login-form");
+        myLoginForm.addEventListener('submit', loginformValidator);
+
+        function registerformValidator(event){
+            event.preventDefault();
+            let username = document.getElementById("username_register").value;
+            localStorage.setItem("username", username);
+            let password = document.getElementById("password_register").value;
+            let email = document.getElementById("email_register").value;
+            fetch("http://127.0.0.1:8000/apiregister/", {
+                method: 'POST',
+                headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({username: username, email: email, password: password})
+                })
+                .then(response=>response.json())
+                .then(data=>{
+                    console.log(data); // still log it so we can debug
+                    if(data['username'] == 'A user with that username already exists.'){
+                        let alertArea = document.getElementById("error-section-reg");
+                        alertArea.style.display = "block";
+                        alertArea.innerHTML = "That username is already in use, try another one.";                   
+                    }
+                    else if(data['email'] == 'Enter a valid email address.'){
+                        let alertArea = document.getElementById("error-section-reg");
+                        alertArea.style.display = "block";
+                        alertArea.innerHTML = "Please enter a valid email address."; 
+                    }
+                    else{
+                        fetch("http://127.0.0.1:8000/api/token/", {
+                        method: 'POST',
+                        headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({username: username, password: password})
+                        })
+                        .then(response=>response.json())
+                        .then(data=>{
+                            console.log(data); // still log it so we can debug
+                            if('access' in data){
+                                let accessToken = data['access'];
+                                let refreshToken = data['refresh'];
+                                localStorage.setItem("access", accessToken);
+                                localStorage.setItem("refresh", refreshToken);
+                                window.location.href = "/";
+                            }
+                            else{
+                                alert("Username or password invalid");
+                            }
+                        });
+                    }
+                });
+            }
+        let myRegisterForm = document.getElementById("register-form");
+        myRegisterForm.addEventListener('submit', registerformValidator);
+        
+        window.onload = function(){
+            isLoggedIn(); // when the page loads call isLoggedIn
+            changePage();
+        }
+    </script>
+<%- include('footer') -%>

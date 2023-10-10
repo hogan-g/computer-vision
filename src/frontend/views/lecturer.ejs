@@ -1,0 +1,208 @@
+<%- include('header') -%>
+    <div class="container">
+        <div class="row" style="padding-top: 15%;">
+            <div class="twelve columns">
+                <h1 style="float:left;">Your Modules</h1>
+                <%# Button that changes the page to the Add Module form when clicked %>
+                <a class="button button-primary" id="add-module" onclick="swapToForm()" style="margin-left: 2%; margin-top: 1.4%;">Add New Module</a>  
+            </div>
+        </div>  
+        <div class="row" id="module_area" style="display: block;">
+            <h3 style="font-style: italic; opacity: 0.5;" id="empty">No Modules to Show...</h3>
+        </div>
+        <div class="row" id="module_add" style="display: none;">
+            <form id="module-form" style="margin-bottom: 0px;">
+                <div class="row">
+                    <div class="four columns">
+                        <label for="code-input">Module Code</label>
+                        <input class="u-full-width" type="text" id="code" name="code-input" placeholder="Code (Max 5 Characters)" required>
+                    </div>
+                    <div class="four columns">
+                        <label for="name-input">Module Name</label>
+                        <input class="u-full-width" type="text" id="name" name="name-input" placeholder="Name" required>
+                    </div>
+                    <div class="four columns">
+                        <label for="count-input">Student Count</label>
+                        <input class="u-full-width" type="number" id="count" name="count-input" placeholder="Number" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <label for="desc-input">Module Description</label>
+                    <textarea class="u-full-width" name="desc-input" id="desc" placeholder="Enter Module Description..." required></textarea>
+                </div>
+                <div class="row">
+                    <button type="submit" class="button-primary">Add Module</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    // Function that creates and displays the cards that hold the module details
+    function constructCard(element){
+        let code = element['code'].toUpperCase();
+        let name = element['name'];
+        let students = element['student_count'];
+        let lecturer_link = element['lecturer'];
+
+        let tile = document.createElement("div");
+        tile.classList.add("six", "columns");
+        tile.style.borderStyle = "dotted";
+        tile.style.padding= "10px";
+        tile.style.marginLeft = "0px";
+        tile.style.margin = "1%";
+
+        let title = document.createElement("h4");
+        title.innerHTML = code + " " + name;
+        tile.appendChild(title);
+
+        let attendance = document.createElement("p");
+        attendance.innerHTML = "Number of Students: " + students;
+        attendance.style.fontStyle = "italic";
+        tile.appendChild(attendance);
+
+        let desc = document.createElement("p");
+        desc.innerHTML = element['description'];
+        desc.style.minHeight = "10%";
+        tile.appendChild(desc);
+
+        let link = document.createElement("a");
+        link.innerHTML = "VIEW " + code;
+        link.classList.add("button");
+        link.style.float = "right";
+        link.style.marginLeft = "2%";
+        let productStr = "/module?code=" + element['code'] + "&title=" + name;
+        link.href = productStr;
+        tile.appendChild(link);
+
+        let remove_button = document.createElement("a");
+        remove_button.style.marginBottom = "0%";
+        remove_button.style.marginLeft = "2%";
+        remove_button.style.backgroundColor = "#C62368";
+        remove_button.style.borderColor = "#C62368";
+        remove_button.classList = "button button-primary";
+        remove_button.innerHTML = "Delete";
+        remove_button.style.float = "right";
+        remove_button.addEventListener('click', function(event) {
+            removeModule(element['code']);
+        });
+        tile.appendChild(remove_button);
+
+        document.getElementById("module_area").appendChild(tile)
+    }
+
+    // Function called when removing a module
+	function removeModule(moduleCode){
+		let req = "http://127.0.0.1:8000/api/module/";
+		fetch(req) // make a request to this endpoint
+        .then(response => response.json()) // with our response, get the json data returned
+        .then(data => data.forEach(element => {
+			if(element['code'] === moduleCode) {
+				module_id = element['id']
+				fetch('http://127.0.0.1:8000/apiremove/module/', {
+        			method: 'POST',
+        			headers: {
+            			'Accept': 'application/json',
+            			'Content-Type': 'application/json',
+			            'Authorization': 'Bearer '+localStorage.getItem("access")
+ 			    },
+				body: JSON.stringify({
+					"code": moduleCode // Passes the module code to verify which module to remove
+				})
+				})
+			    window.location.assign("http://localhost:3000/lecturer/")
+			}
+		}))
+	}
+
+    // Gets the module info by a fetch request before passing it to the display function
+	function constructModules(){	
+		let list1 = document.getElementById("mylist");
+		let req = "http://127.0.0.1:8000/api/module/";
+		fetch(req) // make a request to this endpoint
+        .then(response => response.json()) // with our response, get the json data returned
+        .then(data => data.forEach(element => {
+            let module_info = element
+            let lecturer = element['lecturer'];
+            fetch(lecturer)
+            .then(response => response.json())
+            .then(data => Object.keys(data).forEach(element => {
+                if (element == 'username') {
+                    let username = localStorage.getItem("username");
+                    if (data[element] === username) {
+                        constructCard(module_info) // Calls the function that displays the module info
+                        document.getElementById('empty').style.display = "none"; 
+                    }
+                }
+            }));
+        }));
+	}
+
+    // Changes the page to the 'Add Module' form when clicked
+    function swapToForm(){
+        d1 = document.getElementById("module_area");
+        d2 = document.getElementById("module_add");
+
+        button = document.getElementById("add-module");
+
+        if(d1.style.display == "block"){
+            d1.style.display = "none";
+            d2.style.display = "block";
+            button.innerHTML = "Show Current Modules"
+        }
+        else{
+            d1.style.display = "block";
+            d2.style.display = "none";
+            button.innerHTML = "Add New Module"
+        }
+    }
+
+    let myForm = document.getElementById("module-form");
+    myForm.addEventListener('submit', formValidator);
+
+    // Uses the username to get the lecturer's ID for fetching the modules
+    let lecturer = "";
+    let req = "http://127.0.0.1:8000/api/users/";
+    fetch(req) // make a request to this endpoint
+    .then(response => response.json()) // with our response, get the json data returned
+    .then(data => data.forEach(element => {
+        let lecturer_name = element['username'];
+        let username = localStorage.getItem("username");
+        if (lecturer_name == username) {
+            lecturer = element['id'];
+        }
+    }));
+
+    // POST request for adding a module
+    function formValidator(event){
+        event.preventDefault();
+        let code = document.getElementById("code").value;
+        let name = document.getElementById("name").value;
+        let description = document.getElementById("desc").value;
+        let student_count = document.getElementById("count").value;
+        fetch("http://127.0.0.1:8000/apimodule/", {
+            method: 'POST',
+            headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer '+localStorage.getItem("access")
+            },
+            body: JSON.stringify({
+                code: code, 
+                name: name, 
+                lecturer: lecturer, 
+                description: description, 
+                student_count: student_count})
+            })
+            .then(response=>response.json())
+            .then(data=>{
+                window.location.reload(); // Reloads the page when the user has added a new module
+            });
+    }
+
+    window.onload = function(){
+        isLoggedIn(); // when the page loads call isLoggedIn
+        constructModules();
+    }
+	</script>
+<%- include('footer') -%>

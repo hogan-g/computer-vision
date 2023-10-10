@@ -1,0 +1,11 @@
+Successful - Can grab media device and display on browser a stream of webcam
+
+Next:
+- How do I send that stream back to python
+- currently docker is fed a device via a flag in docker run 
+- instead of opencv opening a camera, we want it to receive the stream from the js/browser
+- how do so?
+    AJAX
+    Sockets
+    Something else?
+    Django

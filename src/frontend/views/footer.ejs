@@ -1,0 +1,19 @@
+    <script>
+        function isLoggedIn()
+        {
+            window.userLoggedIn = false;
+
+            let accessToken = localStorage.getItem("access");
+            if(accessToken != null)
+            {
+                // if there is an access token in localstorage
+                window.userLoggedIn = true;
+                document.getElementById("timetable").classList.remove("disabled");
+            }
+            else{
+                document.getElementById("timetable").classList.add("disabled");
+            }
+        }
+    </script>
+    </body>
+</html>

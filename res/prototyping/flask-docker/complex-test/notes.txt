@@ -1,0 +1,1 @@
+docker run --device /dev/video0 -p 8080:8080 hogang22/flask-docker-opencv-test
